@@ -1,6 +1,7 @@
 package Experiment._220423.Gpt4All;
 
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.TextArea;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -20,30 +21,23 @@ import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.text.PlainDocument;
+
+import Experiment.utils.Create;
+
 import javax.swing.JScrollPane;
 
 public class Gpt4All  {
-	
+    static JTextArea textArea;
+    static JTextField textField;
+    static JScrollPane scrollPane;
+    static JPanel panel;
+    static JFrame frame;
 	public static void main(String[] args) throws IOException {
-	    var textArea = new JTextArea(20, 80);
-	    textArea.setEditable(false);
-	    textArea.setWrapStyleWord(true);
-	    
-	    var textField = new JTextField();
-	    
-	    var scrollPane = new JScrollPane(textArea);
-	    scrollPane.setHorizontalScrollBarPolicy(
-	    		ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-	    );
-	    
-	    var panel = new JPanel();
-	    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-	    panel.add(scrollPane);
-	    panel.add(textField);
-		
-		createWindow(panel);
-		var processBuilder = new ProcessBuilder("C:/Chat/gpt4all/chat/gpt4all-lora-quantized-win64.exe");
-		
+	    initialize();
+		var processBuilder = new ProcessBuilder(
+				"C:/Chat/gpt4all/chat/gpt4all-lora-quantized-win64.exe"
+		);
 		processBuilder.directory(new File("C:/Chat/gpt4all/chat/"));
 		processBuilder.redirectErrorStream(true);
 		
@@ -56,12 +50,18 @@ public class Gpt4All  {
 					var bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
 					String line = null;
 					while ((line = bufferedReader.readLine()) != null) {
+						if(
+							textArea.getText().contains("LLaMA") ||
+							textArea.getText().contains("> ")
+						) {
+							textField.setEditable(true);
+						}
 						textArea.append(line.replaceAll("\u001B\\[[;\\d]*m", "") + "\n");
 					}
 				} catch (IOException exception) {
 					exception.printStackTrace();
 				}
-				
+
 				try {
 					int exitCode = process.waitFor();
 					textArea.append("\nProcesso finalizado com código de saída " + exitCode + ".");
@@ -80,22 +80,28 @@ public class Gpt4All  {
 			        
 			        try {
 						outputStream.write((inputText + "\n").getBytes());
+						textArea.append(inputText + "\n");
 				        outputStream.flush();
 					} catch (IOException exception) {
 						exception.printStackTrace();
 					}
-			        
+
+					textField.setEditable(false);
 			        textField.setText("");
 			    }
 			}
 		);
 	}
-	static JFrame createWindow(Component view) {
-	    var frame = new JFrame("Minha Aplicação");
-	    frame.add(view);
-	    frame.pack();
-	    frame.setVisible(true);
-	    return frame;
+	static void initialize() {
+	     textArea = Create.createTextArea();
+	     textArea.setEditable(false);
+	     textField = Create.createTextField(Integer.MAX_VALUE, 50);
+	     textField.setEditable(false);
+	     scrollPane = Create.createVerticalScrollPane(textArea);
+	     Component[] components = {scrollPane, textField};
+	     panel = Create.createBoxPanel(components, BoxLayout.Y_AXIS);
+	     frame = Create.createWindow(panel);
+	     frame.setSize(800, 600);
 	}
 }
 
